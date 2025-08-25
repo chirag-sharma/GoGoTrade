@@ -1,0 +1,56 @@
+# FastAPI and web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Configuration management
+pydantic[email]==2.5.0
+python-decouple==3.8
+
+# Database and caching
+asyncpg==0.29.0
+sqlalchemy==2.0.23
+alembic==1.13.0
+redis==5.0.1
+
+# Time series database (TimescaleDB is PostgreSQL extension)
+psycopg2-binary==2.9.9
+
+# Trading and financial data
+kiteconnect==4.3.0
+pandas==2.1.4
+numpy==1.26.2
+ta-lib==0.4.28
+
+# Backtesting and analysis
+vectorbt==0.25.2
+backtrader==1.9.78.123
+
+# WebSocket support
+websockets==12.0
+python-socketio==5.10.0
+
+# HTTP clients
+httpx==0.25.2
+requests==2.31.0
+
+# Async support
+asyncio==3.4.3
+aioredis==2.0.1
+
+# Utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Monitoring and logging
+structlog==23.2.0
+sentry-sdk==1.38.0
