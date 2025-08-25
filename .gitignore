@@ -86,6 +86,9 @@ yarn-error.log*
 build/
 dist/
 
+# Documentation (local development only)
+docs/
+
 # Temporary files
 tmp/
 temp/
