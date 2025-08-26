@@ -8,13 +8,13 @@ pydantic[email]==2.5.0
 python-decouple==3.8
 
 # Database and caching
-asyncpg==0.29.0
-sqlalchemy==2.0.23
+psycopg[binary]==3.2.9
+sqlalchemy[asyncio]==2.0.23
 alembic==1.13.0
-redis==5.0.1
+redis[hiredis]==5.0.1
 
 # Time series database (TimescaleDB is PostgreSQL extension)
-psycopg2-binary==2.9.9
+# psycopg2-binary==2.9.9 # Replaced with psycopg
 
 # Trading and financial data
 kiteconnect==4.3.0
