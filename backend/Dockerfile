@@ -10,19 +10,12 @@ RUN apt-get update && apt-get install -y \
     g++ \
     wget \
     curl \
+    build-essential \
+    autotools-dev \
+    autoconf \
     && rm -rf /var/lib/apt/lists/*
 
-# Install TA-Lib dependencies
-RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
-    tar -xzf ta-lib-0.4.0-src.tar.gz && \
-    cd ta-lib && \
-    ./configure --prefix=/usr && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
-
-# Copy requirements and install Python dependencies
+# Copy requirements and install Python dependencies (excluding TA-Lib Python wrapper)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

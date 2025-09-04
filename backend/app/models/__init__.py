@@ -105,10 +105,10 @@ class OHLCVData(Base):
     """
     __tablename__ = "ohlcv_data"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"), nullable=False)
-    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
-    timeframe = Column(String(10), nullable=False)  # 1m, 5m, 15m, 1h, 1d, etc.
+    # Composite primary key for TimescaleDB hypertable
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"), primary_key=True)
+    timestamp = Column(DateTime(timezone=True), primary_key=True)
+    timeframe = Column(String(10), primary_key=True)  # 1m, 5m, 15m, 1h, 1d, etc.
     
     # OHLCV data
     open = Column(Numeric(12, 4), nullable=False)
@@ -127,12 +127,10 @@ class OHLCVData(Base):
     # Relationships
     instrument = relationship("Instrument", back_populates="ohlcv_data")
     
-    # Constraints
+    # Indexes for performance
     __table_args__ = (
+        Index('idx_ohlcv_timestamp', 'timestamp'),
         Index('idx_ohlcv_instrument_time', 'instrument_id', 'timestamp'),
-        Index('idx_ohlcv_time_frame', 'timestamp', 'timeframe'),
-        UniqueConstraint('instrument_id', 'timestamp', 'timeframe', 
-                        name='uq_ohlcv_instrument_time_frame'),
     )
     
     def __repr__(self):
@@ -145,9 +143,11 @@ class Trade(Base):
     """
     __tablename__ = "trades"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Composite primary key including order_timestamp for TimescaleDB hypertable
+    order_id = Column(String(100), primary_key=True)
+    order_timestamp = Column(DateTime(timezone=True), primary_key=True)
+    
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"), nullable=False)
-    order_id = Column(String(100), nullable=False, index=True)
     exchange_order_id = Column(String(100), nullable=True)
     
     # Trade details
@@ -169,7 +169,6 @@ class Trade(Base):
     user_id = Column(String(50), nullable=False)  # User/client identifier
     
     # Timestamps
-    order_timestamp = Column(DateTime(timezone=True), nullable=False)
     exchange_timestamp = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), 
@@ -181,7 +180,7 @@ class Trade(Base):
     
     # Indexes
     __table_args__ = (
-        Index('idx_trades_order_time', 'order_timestamp'),
+        Index('idx_trades_timestamp', 'order_timestamp'),
         Index('idx_trades_instrument_time', 'instrument_id', 'order_timestamp'),
         Index('idx_trades_user_time', 'user_id', 'order_timestamp'),
         Index('idx_trades_algo_strategy', 'algo_id', 'strategy_id'),
@@ -197,8 +196,10 @@ class TradingSignal(Base):
     """
     __tablename__ = "trading_signals"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"), nullable=False)
+    # Composite primary key including generated_at for TimescaleDB hypertable
+    instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"), primary_key=True)
+    generated_at = Column(DateTime(timezone=True), primary_key=True)
+    strategy_name = Column(String(100), primary_key=True)
     
     # Signal details
     signal_type = Column(Enum(SignalType), nullable=False)
@@ -208,12 +209,10 @@ class TradingSignal(Base):
     timeframe = Column(String(10), nullable=False)  # Signal timeframe
     
     # Strategy information
-    strategy_name = Column(String(100), nullable=False)
     indicators_used = Column(Text, nullable=True)  # JSON string of indicators
     market_condition = Column(String(50), nullable=True)  # Bull, Bear, Sideways
     
     # Signal metadata
-    generated_at = Column(DateTime(timezone=True), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     
@@ -228,9 +227,9 @@ class TradingSignal(Base):
     
     # Indexes
     __table_args__ = (
-        Index('idx_signals_instrument_time', 'instrument_id', 'generated_at'),
+        Index('idx_signals_timestamp', 'generated_at'),
         Index('idx_signals_active_time', 'is_active', 'generated_at'),
-        Index('idx_signals_strategy_time', 'strategy_name', 'generated_at'),
+        Index('idx_signals_timeframe', 'timeframe', 'generated_at'),
     )
     
     def __repr__(self):

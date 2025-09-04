@@ -1,0 +1,21 @@
+# Frontend Dockerfile for React development
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies first (for better caching)
+COPY frontend/package*.json ./
+RUN npm ci --only=production=false
+
+# Copy source code
+COPY frontend/ .
+
+# Build the React app
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Start the development server
+CMD ["npm", "start"]

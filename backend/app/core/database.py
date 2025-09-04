@@ -10,8 +10,9 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 import redis.asyncio as redis
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 from app.models import Base
 
@@ -150,43 +151,51 @@ async def setup_timescaledb():
     
     async with engine.begin() as conn:
         # Enable TimescaleDB extension
-        await conn.execute("CREATE EXTENSION IF NOT EXISTS timescaledb;")
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
         
         # Convert ohlcv_data table to hypertable
-        await conn.execute("""
+        await conn.execute(text("""
             SELECT create_hypertable('ohlcv_data', 'timestamp', 
                                    chunk_time_interval => INTERVAL '{chunk_interval}',
                                    if_not_exists => TRUE);
-        """.format(chunk_interval=settings.TIMESCALEDB_CHUNK_INTERVAL))
+        """.format(chunk_interval=settings.TIMESCALEDB_CHUNK_INTERVAL)))
         
         # Setup compression policy for ohlcv_data
-        await conn.execute("""
+        await conn.execute(text("""
             ALTER TABLE ohlcv_data SET (
                 timescaledb.compress,
                 timescaledb.compress_segmentby = 'instrument_id, timeframe'
             );
-        """)
+        """))
         
-        await conn.execute("""
-            SELECT add_compression_policy('ohlcv_data', INTERVAL '{compression_interval}');
-        """.format(compression_interval=settings.TIMESCALEDB_COMPRESSION_INTERVAL))
+        await conn.execute(text("""
+            SELECT add_compression_policy('ohlcv_data', INTERVAL '{compression_interval}', if_not_exists => TRUE);
+        """.format(compression_interval=settings.TIMESCALEDB_COMPRESSION_INTERVAL)))
         
         # Convert trades table to hypertable (using order_timestamp)
-        await conn.execute("""
+        await conn.execute(text("""
             SELECT create_hypertable('trades', 'order_timestamp',
                                    chunk_time_interval => INTERVAL '1 day',
                                    if_not_exists => TRUE);
-        """)
+        """))
         
         # Convert trading_signals table to hypertable
-        await conn.execute("""
+        await conn.execute(text("""
             SELECT create_hypertable('trading_signals', 'generated_at',
                                    chunk_time_interval => INTERVAL '7 days',
                                    if_not_exists => TRUE);
-        """)
-        
+        """))
+    
+    # Create views and aggregates outside transaction
+    # Use autocommit for operations that cannot run in transactions
+    async_engine_autocommit = create_async_engine(
+        settings.DATABASE_URL + "?autocommit=true",
+        pool_size=1,
+    )
+    
+    async with async_engine_autocommit.connect() as conn:
         # Create materialized views for common queries
-        await conn.execute("""
+        await conn.execute(text("""
             CREATE MATERIALIZED VIEW IF NOT EXISTS daily_ohlcv AS
             SELECT 
                 instrument_id,
@@ -200,10 +209,10 @@ async def setup_timescaledb():
             WHERE timeframe = '1d'
             GROUP BY instrument_id, DATE(timestamp)
             ORDER BY instrument_id, date;
-        """)
+        """))
         
         # Create continuous aggregate for real-time 5-minute candles
-        await conn.execute("""
+        await conn.execute(text("""
             CREATE MATERIALIZED VIEW IF NOT EXISTS ohlcv_5m
             WITH (timescaledb.continuous) AS
             SELECT 
@@ -217,15 +226,18 @@ async def setup_timescaledb():
             FROM ohlcv_data 
             WHERE timeframe = '1m'
             GROUP BY bucket, instrument_id;
-        """)
+        """))
         
         # Add refresh policy for continuous aggregate
-        await conn.execute("""
+        await conn.execute(text("""
             SELECT add_continuous_aggregate_policy('ohlcv_5m',
                 start_offset => INTERVAL '1 hour',
                 end_offset => INTERVAL '5 minutes',
-                schedule_interval => INTERVAL '5 minutes');
-        """)
+                schedule_interval => INTERVAL '5 minutes',
+                if_not_exists => TRUE);
+        """))
+    
+    await async_engine_autocommit.dispose()
     
     print("✅ TimescaleDB hypertables and policies configured")
 

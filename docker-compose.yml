@@ -1,18 +1,15 @@
-version: '3.8'
-
 services:
   # FastAPI Backend
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-    container_name: gogotrade-backend
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://gogotrade:gogotrade@timescaledb:5432/gogotrade
+      - DATABASE_URL=postgresql+psycopg://gogotrade:gogotrade@timescaledb:5432/gogotrade
       - REDIS_URL=redis://redis:6379
     depends_on:
       - timescaledb
@@ -23,7 +20,6 @@ services:
   # TimescaleDB (PostgreSQL with time-series extension)
   timescaledb:
     image: timescale/timescaledb:latest-pg15
-    container_name: gogotrade-timescaledb
     environment:
       POSTGRES_DB: gogotrade
       POSTGRES_USER: gogotrade
@@ -38,11 +34,22 @@ services:
   # Redis for caching and real-time data
   redis:
     image: redis:7-alpine
-    container_name: gogotrade-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - gogotrade-network
+
+  # React Frontend with Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend-prod
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
     networks:
       - gogotrade-network
 

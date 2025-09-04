@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import getSettings
-from app.api.v1.api import apiRouter
+from app.api.v1 import router as v1_router
 from app.core.database import db_manager
 
 settings = getSettings()
@@ -65,7 +65,7 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(apiRouter, prefix=settings.apiV1Prefix)
+app.include_router(v1_router, prefix="/api")
 
 
 # Database health check endpoint
