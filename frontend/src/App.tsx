@@ -6,13 +6,13 @@ import React from 'react';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { store } from './store';
-import TradingDashboard from './components/trading/TradingDashboard';
+import DashboardLayout from './components/layout/DashboardLayout';
 import './App.css';
 
-// Create dark theme for trading interface
-const darkTheme = createTheme({
+// Create professional light theme for trading interface
+const lightTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
       main: '#1976d2',
     },
@@ -20,8 +20,8 @@ const darkTheme = createTheme({
       main: '#dc004e',
     },
     background: {
-      default: '#0a0a0a',
-      paper: '#1e1e1e',
+      default: '#f5f5f5',
+      paper: '#ffffff',
     },
     success: {
       main: '#2e7d32',
@@ -38,6 +38,12 @@ const darkTheme = createTheme({
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
   },
   components: {
     MuiPaper: {
@@ -47,15 +53,22 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
   },
 });
 
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={darkTheme}>
+      <ThemeProvider theme={lightTheme}>
         <CssBaseline />
-        <TradingDashboard />
+        <DashboardLayout />
       </ThemeProvider>
     </Provider>
   );

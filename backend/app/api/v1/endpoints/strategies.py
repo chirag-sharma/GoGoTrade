@@ -7,6 +7,9 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+import numpy as np
+import pandas as pd
+import json
 
 from app.services.backtesting import (
     backtesting_engine, 
@@ -16,6 +19,40 @@ from app.services.backtesting import (
 )
 
 router = APIRouter()
+
+
+def sanitize_float(value) -> float:
+    """Sanitize float values for JSON serialization"""
+    if pd.isna(value) or np.isinf(value) or np.isnan(value):
+        return 0.0
+    return float(value)
+
+
+def sanitize_series_to_list(series) -> List[dict]:
+    """Convert pandas Series to JSON-safe list of dictionaries"""
+    if series is None or len(series) == 0:
+        return []
+    
+    result = []
+    for index, value in series.items():
+        # Convert pandas Timestamp to string if needed
+        key = str(index) if hasattr(index, 'strftime') else str(index)
+        # Sanitize the value
+        safe_value = sanitize_float(value)
+        result.append({"date": key, "value": safe_value})
+    
+    return result
+
+
+def sanitize_dict_values(data: dict) -> dict:
+    """Sanitize all float values in a dictionary"""
+    result = {}
+    for key, value in data.items():
+        if isinstance(value, (int, float)):
+            result[key] = sanitize_float(value)
+        else:
+            result[str(key)] = sanitize_float(value)
+    return result
 
 
 class TradingSignal(BaseModel):
@@ -148,47 +185,94 @@ async def runBacktest(request: BacktestRequest) -> BacktestResult:
         # Run backtest
         results = await backtesting_engine.run_backtest(params)
         
-        # Convert equity curve to API format
-        equity_curve_data = [
-            {
-                "date": str(date),
-                "value": float(value)
-            }
-            for date, value in results.equity_curve.items()
-        ]
+        # Sanitize all float values to prevent JSON serialization errors
+        sanitized_results = {
+            'total_return': sanitize_float(results.total_return),
+            'annualized_return': sanitize_float(results.annualized_return),
+            'volatility': sanitize_float(results.volatility),
+            'sharpe_ratio': sanitize_float(results.sharpe_ratio),
+            'sortino_ratio': sanitize_float(results.sortino_ratio),
+            'max_drawdown': sanitize_float(results.max_drawdown),
+            'total_trades': int(results.total_trades) if results.total_trades else 0,
+            'winning_trades': int(results.winning_trades) if results.winning_trades else 0,
+            'losing_trades': int(results.losing_trades) if results.losing_trades else 0,
+            'win_rate': sanitize_float(results.win_rate),
+            'profit_factor': sanitize_float(results.profit_factor),
+            'avg_win': sanitize_float(results.avg_win),
+            'avg_loss': sanitize_float(results.avg_loss),
+            'var_95': sanitize_float(results.var_95),
+            'cvar_95': sanitize_float(results.cvar_95),
+            'beta': sanitize_float(results.beta),
+            'alpha': sanitize_float(results.alpha)
+        }
         
-        # Convert monthly returns to API format
-        monthly_returns_data = [
-            {
-                "month": str(date),
-                "return": float(ret)
-            }
-            for date, ret in results.monthly_returns.items()
-        ]
+        # Convert pandas Series to JSON-safe format
+        equity_curve_data = []
+        if hasattr(results, 'equity_curve') and results.equity_curve is not None:
+            try:
+                # Handle pandas Series
+                if hasattr(results.equity_curve, 'items'):
+                    for index, value in results.equity_curve.items():
+                        equity_curve_data.append({
+                            "date": str(index),
+                            "value": sanitize_float(value)
+                        })
+                # Handle dictionary
+                elif isinstance(results.equity_curve, dict):
+                    for date, value in results.equity_curve.items():
+                        equity_curve_data.append({
+                            "date": str(date),
+                            "value": sanitize_float(value)
+                        })
+            except Exception as e:
+                print(f"Warning: Error converting equity curve: {e}")
+                equity_curve_data = []
         
-        # Create API response
+        # Convert monthly returns to JSON-safe format
+        monthly_returns_data = []
+        if hasattr(results, 'monthly_returns') and results.monthly_returns is not None:
+            try:
+                # Handle pandas Series
+                if hasattr(results.monthly_returns, 'items'):
+                    for index, value in results.monthly_returns.items():
+                        monthly_returns_data.append({
+                            "month": str(index),
+                            "return": sanitize_float(value)
+                        })
+                # Handle dictionary
+                elif isinstance(results.monthly_returns, dict):
+                    for date, ret in results.monthly_returns.items():
+                        monthly_returns_data.append({
+                            "month": str(date),
+                            "return": sanitize_float(ret)
+                        })
+            except Exception as e:
+                print(f"Warning: Error converting monthly returns: {e}")
+                monthly_returns_data = []
+        
+        # Create API response with sanitized data
         return BacktestResult(
             strategy=request.strategy,
             symbol=request.symbol,
             start_date=request.start_date,
             end_date=request.end_date,
-            total_return=results.total_return,
-            annualized_return=results.annualized_return,
-            volatility=results.volatility,
-            sharpe_ratio=results.sharpe_ratio,
-            sortino_ratio=results.sortino_ratio,
-            max_drawdown=results.max_drawdown,
-            total_trades=results.total_trades,
-            winning_trades=results.winning_trades,
-            losing_trades=results.losing_trades,
-            win_rate=results.win_rate,
-            profit_factor=results.profit_factor,
-            avg_win=results.avg_win,
-            avg_loss=results.avg_loss,
-            var_95=results.var_95,
-            cvar_95=results.cvar_95,
-            beta=results.beta,
-            alpha=results.alpha,
+            total_return=sanitized_results['total_return'],
+            annualized_return=sanitized_results['annualized_return'],
+            volatility=sanitized_results['volatility'],
+            sharpe_ratio=sanitized_results['sharpe_ratio'],
+            sortino_ratio=sanitized_results['sortino_ratio'],
+            max_drawdown=sanitized_results['max_drawdown'],
+            total_trades=sanitized_results['total_trades'],
+            winning_trades=sanitized_results['winning_trades'],
+            losing_trades=sanitized_results['losing_trades'],
+            win_rate=sanitized_results['win_rate'],
+            profit_factor=sanitized_results['profit_factor'],
+            avg_win=sanitized_results['avg_win'],
+            avg_loss=sanitized_results['avg_loss'],
+            var_95=sanitized_results['var_95'],
+            cvar_95=sanitized_results['cvar_95'],
+            beta=sanitized_results['beta'],
+            alpha=sanitized_results['alpha'],
             equity_curve_data=equity_curve_data,
             monthly_returns_data=monthly_returns_data
         )

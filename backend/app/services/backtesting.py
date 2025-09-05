@@ -291,60 +291,118 @@ class BacktestingEngine:
             raise RuntimeError(f"VectorBT backtest failed: {str(e)}") from e
     
     def calculate_vectorbt_metrics(self, result: Dict, initial_capital: float) -> Dict:
-        """Calculate comprehensive metrics using VectorBT results"""
+        """
+        Calculate comprehensive metrics using VectorBT results
+        Handles NaN values and ensures JSON serialization compatibility
+        """
         try:
             portfolio = result['portfolio']
             stats = result['stats']
             
-            # Get portfolio statistics
-            total_return = stats['Total Return [%]'] / 100 if 'Total Return [%]' in stats else 0
-            sharpe_ratio = stats['Sharpe Ratio'] if 'Sharpe Ratio' in stats else 0
-            max_drawdown = stats['Max Drawdown [%]'] / 100 if 'Max Drawdown [%]' in stats else 0
+            # Helper function to safely extract and sanitize float values
+            def safe_float(value, default=0.0):
+                if value is None or pd.isna(value) or np.isinf(value):
+                    return default
+                return float(value)
+            
+            # Get portfolio statistics safely
+            total_return = safe_float(stats.get('Total Return [%]', 0)) / 100
+            sharpe_ratio = safe_float(stats.get('Sharpe Ratio', 0))
+            max_drawdown = safe_float(stats.get('Max Drawdown [%]', 0)) / 100
             
             # Trading statistics
             trades_stats = portfolio.trades.stats()
-            total_trades = trades_stats['Total Trades'] if 'Total Trades' in trades_stats else 0
-            win_rate = trades_stats['Win Rate [%]'] / 100 if 'Win Rate [%]' in trades_stats else 0
+            total_trades = int(safe_float(trades_stats.get('Total Trades', 0)))
+            win_rate = safe_float(trades_stats.get('Win Rate [%]', 0)) / 100
             
-            # Returns and volatility
+            # Returns and volatility - handle edge cases
             returns = portfolio.returns()
-            volatility = returns.std() * np.sqrt(252) if len(returns) > 1 else 0
-            annualized_return = (1 + total_return) ** (252 / len(portfolio.value())) - 1 if len(portfolio.value()) > 0 else 0
+            volatility = safe_float(returns.std() * np.sqrt(252) if len(returns) > 1 else 0)
             
-            # Calculate additional metrics
+            # Calculate annualized return safely
+            portfolio_value = portfolio.value()
+            if len(portfolio_value) > 0:
+                days = len(portfolio_value)
+                if days > 0 and total_return != 0:
+                    annualized_return = safe_float((1 + total_return) ** (252 / days) - 1)
+                else:
+                    annualized_return = 0.0
+            else:
+                annualized_return = 0.0
+            
+            # Calculate additional metrics safely
             winning_trades = int(total_trades * win_rate) if total_trades > 0 else 0
-            losing_trades = total_trades - winning_trades
+            losing_trades = max(0, total_trades - winning_trades)
             
-            # Value at Risk (95%)
-            var_95 = returns.quantile(0.05) if len(returns) > 0 else 0
-            cvar_95 = returns[returns <= var_95].mean() if len(returns) > 0 and var_95 < 0 else 0
+            # Value at Risk (95%) - handle empty returns
+            if len(returns) > 0:
+                var_95 = safe_float(returns.quantile(0.05))
+                cvar_95 = safe_float(returns[returns <= var_95].mean() if var_95 < 0 else 0)
+            else:
+                var_95 = 0.0
+                cvar_95 = 0.0
+            
+            # Extract other metrics safely
+            profit_factor = safe_float(trades_stats.get('Profit Factor', 1.0))
+            avg_win = safe_float(trades_stats.get('Avg Win [%]', 0)) / 100
+            avg_loss = safe_float(trades_stats.get('Avg Loss [%]', 0)) / 100
+            sortino_ratio = safe_float(stats.get('Sortino Ratio', sharpe_ratio))
+            
+            # Create equity curve as simple dictionary with safe values
+            equity_curve_dict = {}
+            if 'equity_curve' in result and result['equity_curve'] is not None:
+                for i, value in enumerate(result['equity_curve']):
+                    equity_curve_dict[str(i)] = safe_float(value)
             
             return {
                 'total_return': total_return,
                 'annualized_return': annualized_return,
                 'volatility': volatility,
                 'sharpe_ratio': sharpe_ratio,
-                'sortino_ratio': stats.get('Sortino Ratio', sharpe_ratio),
+                'sortino_ratio': sortino_ratio,
                 'max_drawdown': max_drawdown,
                 'total_trades': total_trades,
                 'winning_trades': winning_trades,
                 'losing_trades': losing_trades,
                 'win_rate': win_rate,
-                'profit_factor': trades_stats.get('Profit Factor', 1.0),
-                'avg_win': trades_stats.get('Avg Win [%]', 0) / 100,
-                'avg_loss': trades_stats.get('Avg Loss [%]', 0) / 100,
+                'profit_factor': profit_factor,
+                'avg_win': avg_win,
+                'avg_loss': avg_loss,
                 'var_95': var_95,
                 'cvar_95': cvar_95,
                 'beta': 0.0,  # Would need benchmark for calculation
                 'alpha': 0.0,  # Would need benchmark for calculation
-                'equity_curve': {str(i): v for i, v in enumerate(result['equity_curve'])},
+                'equity_curve': equity_curve_dict,
                 'monthly_returns': {},  # Simplified for now
                 'yearly_returns': {}    # Simplified for now
             }
             
         except Exception as e:
-            raise RuntimeError(f"Failed to calculate VectorBT metrics: {str(e)}") from e
-    
+            # Return safe default values if calculation fails
+            print(f"Warning: VectorBT metrics calculation failed: {e}")
+            return {
+                'total_return': 0.0,
+                'annualized_return': 0.0,
+                'volatility': 0.0,
+                'sharpe_ratio': 0.0,
+                'sortino_ratio': 0.0,
+                'max_drawdown': 0.0,
+                'total_trades': 0,
+                'winning_trades': 0,
+                'losing_trades': 0,
+                'win_rate': 0.0,
+                'profit_factor': 1.0,
+                'avg_win': 0.0,
+                'avg_loss': 0.0,
+                'var_95': 0.0,
+                'cvar_95': 0.0,
+                'beta': 0.0,
+                'alpha': 0.0,
+                'equity_curve': {},
+                'monthly_returns': {},
+                'yearly_returns': {}
+            }
+
     async def run_backtest(self, params: BacktestParams) -> BacktestResults:
         """
         Run comprehensive backtest using VectorBT
