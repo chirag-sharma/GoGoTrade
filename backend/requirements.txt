@@ -18,12 +18,14 @@ redis[hiredis]==5.0.1
 # psycopg2-binary==2.9.9 # Replaced with psycopg
 
 # Trading and financial data
-numpy==1.24.4
+numpy==1.23.5
 pandas==2.1.4
 aiohttp==3.9.1
 yfinance==0.2.18
 kiteconnect==5.0.1
-# Technical Analysis - installed via conda in Dockerfile
+
+# Technical Analysis - Modern alternatives (No C dependencies!)
+pandas-ta==0.3.14b0
 
 # Advanced analytics and backtesting
 vectorbt==0.28.1

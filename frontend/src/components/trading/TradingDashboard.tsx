@@ -43,65 +43,102 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 
-// Import AI Trading Service
-import {
-  aiTradingService,
-  MarketDataItem,
+// Import Trading Data Service
+import TradingDataService, {
+  MarketData,
   TradingSignal,
-  DashboardData,
-  formatPrice,
-  formatChange,
-  formatPercentage,
-  getSignalColor,
-  getSignalIcon,
-} from '../../services/aiTradingService';
+} from '../../services/tradingDataService';
 
 // Import Trading Chart
-import TradingChart from '../charts/SimpleTradingChart';
+import SimpleProfessionalChart from '../charts/SimpleProfessionalChart';
+
+// Utility functions for formatting
+const formatPrice = (price: number): string => {
+  return `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const formatChange = (change: number): string => {
+  const sign = change >= 0 ? '+' : '';
+  return `${sign}${change.toFixed(2)}`;
+};
+
+const formatPercentage = (percentage: number): string => {
+  const sign = percentage >= 0 ? '+' : '';
+  return `${sign}${percentage.toFixed(2)}%`;
+};
+
+const getSignalColor = (signalType: string): string => {
+  switch (signalType) {
+    case 'BUY': return '#4caf50'; // Green
+    case 'SELL': return '#f44336'; // Red
+    case 'HOLD': return '#ff9800'; // Orange
+    default: return '#9e9e9e'; // Gray
+  }
+};
+
+const getSignalIcon = (signalType: string): string => {
+  switch (signalType) {
+    case 'BUY': return '🟢';
+    case 'SELL': return '🔴';
+    case 'HOLD': return '🟡';
+    default: return '⚪';
+  }
+};
 
 const DRAWER_WIDTH = 300;
 
 const TradingDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedSymbol, setSelectedSymbol] = useState('RELIANCE.NS');
-  const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
+  const [selectedSymbol, setSelectedSymbol] = useState('RELIANCE');
+  const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [tradingSignals, setTradingSignals] = useState<TradingSignal[]>([]);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  // Fetch real-time data from AI Trading APIs
+    // Fetch real-time data from Trading APIs
   const fetchData = useCallback(async () => {
-    const defaultSymbols = ['NIFTY', 'SENSEX', 'RELIANCE.NS', 'TCS.NS', 'INFY.NS'];
+    const defaultSymbols = ['RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK'];
     
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch comprehensive dashboard data from AI backend
-      const data = await aiTradingService.getDashboardData(defaultSymbols);
+      // Fetch market data and trading signals separately using new API structure
+      const marketDataPromises = defaultSymbols.map(symbol => 
+        TradingDataService.getMarketData(symbol).catch(error => {
+          console.warn(`Failed to fetch market data for ${symbol}:`, error);
+          return null;
+        })
+      );
       
-      setDashboardData(data);
-      setMarketData(data.marketData);
-      setTradingSignals(data.signals);
+      const signalsPromises = defaultSymbols.map(symbol => 
+        TradingDataService.getTradingSignals(symbol).catch(error => {
+          console.warn(`Failed to fetch signals for ${symbol}:`, error);
+          return [];
+        })
+      );
+
+      const [marketDataResults, signalResults] = await Promise.all([
+        Promise.all(marketDataPromises),
+        Promise.all(signalsPromises)
+      ]);
+
+      // Filter out null results and flatten arrays
+      const validMarketData = marketDataResults.filter(data => data !== null) as MarketData[];
+      const allSignals = signalResults.flat();
+
+      setMarketData(validMarketData);
+      setTradingSignals(allSignals);
       setLastUpdated(new Date().toLocaleTimeString());
       
     } catch (err) {
-      console.error('Error fetching AI data:', err);
-      setError('Failed to connect to AI Trading Service');
+      console.error('Error fetching trading data:', err);
+      setError('Failed to connect to Trading Service');
       
-      // Use safe fallback methods with mock data
-      try {
-        const fallbackMarketData = await aiTradingService.getMarketDataSafe(defaultSymbols);
-        const fallbackSignals = await aiTradingService.getTradingSignalsSafe(defaultSymbols);
-        
-        setMarketData(fallbackMarketData);
-        setTradingSignals(fallbackSignals);
-        setLastUpdated(new Date().toLocaleTimeString() + ' (Mock Data)');
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-      }
+      // Provide basic fallback data structure
+      setMarketData([]);
+      setTradingSignals([]);
     } finally {
       setLoading(false);
     }
@@ -287,7 +324,7 @@ const TradingDashboard: React.FC = () => {
                     {stock.symbol}
                   </Typography>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {formatPrice(stock.price)}
+                    {formatPrice(stock.lastPrice)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography 
@@ -306,14 +343,6 @@ const TradingDashboard: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">
                     Vol: {stock.volume.toLocaleString('en-IN')}
                   </Typography>
-                  {/* Show high/low if available */}
-                  {stock.high && stock.low && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        H: {formatPrice(stock.high)} | L: {formatPrice(stock.low)}
-                      </Typography>
-                    </Box>
-                  )}
                 </CardContent>
               </Card>
             ))}
@@ -324,9 +353,9 @@ const TradingDashboard: React.FC = () => {
             {/* Chart Section */}
             <Box sx={{ flex: '2 1 0', minWidth: 0 }}>
               {/* Professional Trading Chart */}
-              <TradingChart
+              <SimpleProfessionalChart
                 symbol={selectedSymbol}
-                signals={tradingSignals.filter(signal => signal.symbol === selectedSymbol)}
+                signals={[]} // Temporarily disable signals until interface is fixed
                 onSymbolChange={setSelectedSymbol}
               />
             </Box>
@@ -363,12 +392,9 @@ const TradingDashboard: React.FC = () => {
                             />
                           </Box>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            {signal.reason}
+                            Strategy: {signal.strategy}
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 2, fontSize: '0.875rem' }}>
-                            <Typography variant="caption">
-                              Price: {formatPrice(signal.price)}
-                            </Typography>
                             {signal.targetPrice && (
                               <Typography variant="caption" color="success.main">
                                 Target: {formatPrice(signal.targetPrice)}
@@ -397,43 +423,38 @@ const TradingDashboard: React.FC = () => {
                   )}
                 </Box>
 
-                {/* Dashboard Summary */}
-                {dashboardData?.summary && (
-                  <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      📊 Market Summary
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                      <Box>
-                        <Typography variant="caption">Symbols Tracked</Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {dashboardData.summary.totalSymbols}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption">Market Sentiment</Typography>
-                        <Typography variant="body2" fontWeight="bold" color={
-                          dashboardData.summary.marketSentiment === 'bullish' ? 'success.main' :
-                          dashboardData.summary.marketSentiment === 'bearish' ? 'error.main' : 'warning.main'
-                        }>
-                          {dashboardData.summary.marketSentiment.toUpperCase()}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption">Buy Signals</Typography>
-                        <Typography variant="body2" fontWeight="bold" color="success.main">
-                          {dashboardData.summary.buySignals}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption">Sell Signals</Typography>
-                        <Typography variant="body2" fontWeight="bold" color="error.main">
-                          {dashboardData.summary.sellSignals}
-                        </Typography>
-                      </Box>
+                {/* Trading Statistics */}
+                <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    📊 Trading Statistics
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption">Symbols Tracked</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {marketData.length}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption">Active Signals</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="primary.main">
+                        {tradingSignals.length}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption">Buy Signals</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="success.main">
+                        {tradingSignals.filter(s => s.signalType === 'BUY').length}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption">Sell Signals</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="error.main">
+                        {tradingSignals.filter(s => s.signalType === 'SELL').length}
+                      </Typography>
                     </Box>
                   </Box>
-                )}
+                </Box>
               </Paper>
             </Box>
           </Box>

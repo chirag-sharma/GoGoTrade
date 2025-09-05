@@ -93,7 +93,7 @@ GoGoTrade/
 - **FastAPI**: Modern Python web framework
 - **TimescaleDB**: Time-series database for OHLCV data
 - **Redis**: Caching and real-time data
-- **TA-Lib**: Technical analysis indicators
+- **pandas-ta**: Technical analysis indicators (modern alternative to TA-Lib)
 - **VectorBT**: Vectorized backtesting
 - **Backtrader**: Event-driven backtesting
 

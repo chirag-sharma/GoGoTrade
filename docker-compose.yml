@@ -1,5 +1,5 @@
 services:
-  # FastAPI Backend
+  # FastAPI Backend (pandas-ta, no TA-Lib dependencies)
   backend:
     build: 
       context: ./backend
@@ -45,7 +45,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend-prod
+      dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
     depends_on:

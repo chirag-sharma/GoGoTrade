@@ -44,7 +44,7 @@ async def getChartData(symbol: str, timeframe: str = "5minute") -> ChartData:
 @router.get("/indicators/{symbol}")
 async def getIndicators(symbol: str, timeframe: str = "5minute") -> dict:
     """Get technical indicators for a symbol"""
-    # TODO: Implement TA-Lib calculations
+    # TODO: Implement pandas-ta calculations
     return {
         "symbol": symbol,
         "timeframe": timeframe,

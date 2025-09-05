@@ -4,18 +4,13 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install minimal system dependencies for Python compilation
 RUN apt-get update && apt-get install -y \
     gcc \
-    g++ \
-    wget \
     curl \
-    build-essential \
-    autotools-dev \
-    autoconf \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies (excluding TA-Lib Python wrapper)
+# Copy requirements and install Python dependencies (pure Python libraries)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

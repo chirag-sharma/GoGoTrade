@@ -79,7 +79,17 @@ export class TradingDataService {
   static async getMarketData(symbol: string): Promise<MarketData> {
     try {
       const response = await apiClient.get(`/api/v1/trading-data/market-data/${symbol}`);
-      return response.data;
+      const data = response.data;
+      
+      // Map API response to our interface
+      return {
+        symbol: data.symbol,
+        lastPrice: data.price,
+        change: 0, // API doesn't provide change, calculate or set default
+        changePercent: data.changePercent || 0,
+        volume: data.volume,
+        timestamp: data.timestamp
+      };
     } catch (error) {
       console.error(`Error fetching market data for ${symbol}:`, error);
       throw error;
@@ -130,7 +140,19 @@ export class TradingDataService {
   static async getTradingSignals(symbol: string): Promise<TradingSignal[]> {
     try {
       const response = await apiClient.get(`/api/v1/strategies/signals/${symbol}`);
-      return response.data;
+      const signals = response.data;
+      
+      // Map API response to our interface
+      return signals.map((signal: any, index: number) => ({
+        id: `${symbol}-${signal.strategy}-${index}`,
+        symbol: signal.symbol,
+        signalType: signal.signal as 'BUY' | 'SELL' | 'HOLD',
+        confidence: signal.confidence,
+        targetPrice: signal.targetPrice,
+        stopLoss: signal.stopLoss,
+        timestamp: signal.timestamp,
+        strategy: signal.strategy
+      }));
     } catch (error) {
       console.error(`Error fetching trading signals for ${symbol}:`, error);
       throw error;

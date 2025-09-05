@@ -287,7 +287,7 @@ class DatabaseManager:
         # Check PostgreSQL connection
         try:
             async with get_db_session() as db:
-                result = await db.execute("SELECT 1")
+                result = await db.execute(text("SELECT 1"))
                 health_status["postgresql"] = result.scalar() == 1
         except Exception as e:
             health_status["postgresql_error"] = str(e)
