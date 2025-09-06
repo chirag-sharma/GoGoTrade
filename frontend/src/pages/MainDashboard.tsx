@@ -29,9 +29,10 @@ import {
   Refresh,
   ShowChart,
   AccountBalance,
-  Favorite,
+  RemoveRedEye,
   Star,
   StarBorder,
+  Visibility,
 } from '@mui/icons-material';
 import { NSESecuritiesService, NSEInstrument, MarketMoversResponse, SectorPerformance } from '../services/nseSecuritiesService';
 
@@ -69,7 +70,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
   const [marketMovers, setMarketMovers] = useState<MarketMoversResponse | null>(null);
   const [sectorPerformance, setSectorPerformance] = useState<SectorPerformance[]>([]);
   const [recentInstruments, setRecentInstruments] = useState<NSEInstrument[]>([]);
-  const [wishlist, setWishlist] = useState<NSEInstrument[]>([]);
+  const [watchlist, setWatchlist] = useState<NSEInstrument[]>([]);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -78,19 +79,19 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
     setLoading(prev => ({ ...prev, [key]: isLoading }));
   };
 
-  // Wishlist functions
-  const addToWishlist = (stock: NSEInstrument) => {
-    if (!wishlist.find(item => item.id === stock.id)) {
-      setWishlist(prev => [...prev, stock]);
+  // Watchlist functions
+  const addToWatchlist = (stock: NSEInstrument) => {
+    if (!watchlist.find(item => item.id === stock.id)) {
+      setWatchlist(prev => [...prev, stock]);
     }
   };
 
-  const removeFromWishlist = (stockId: number) => {
-    setWishlist(prev => prev.filter(item => item.id !== stockId));
+  const removeFromWatchlist = (stockId: number) => {
+    setWatchlist(prev => prev.filter(item => item.id !== stockId));
   };
 
-  const isInWishlist = (stockId: number) => {
-    return wishlist.some(item => item.id === stockId);
+  const isInWatchlist = (stockId: number) => {
+    return watchlist.some(item => item.id === stockId);
   };
 
   // Load initial data
@@ -117,21 +118,21 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
 
   useEffect(() => {
     loadInitialData();
-    // Load wishlist from localStorage
-    const savedWishlist = localStorage.getItem('gogoTrade_wishlist');
-    if (savedWishlist) {
+    // Load watchlist from localStorage
+    const savedWatchlist = localStorage.getItem('gogoTrade_watchlist');
+    if (savedWatchlist) {
       try {
-        setWishlist(JSON.parse(savedWishlist));
+        setWatchlist(JSON.parse(savedWatchlist));
       } catch (err) {
-        console.error('Failed to load wishlist from localStorage:', err);
+        console.error('Failed to load watchlist from localStorage:', err);
       }
     }
   }, [loadInitialData]);
 
-  // Save wishlist to localStorage whenever it changes
+  // Save watchlist to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('gogoTrade_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);  // Search functionality
+    localStorage.setItem('gogoTrade_watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);  // Search functionality
   const handleSearch = async () => {
     if (!searchQuery.trim() || searchQuery.length < 2) return;
     
@@ -245,15 +246,15 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                       size="small"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (isInWishlist(stock.id)) {
-                          removeFromWishlist(stock.id);
+                        if (isInWatchlist(stock.id)) {
+                          removeFromWatchlist(stock.id);
                         } else {
-                          addToWishlist(stock);
+                          addToWatchlist(stock);
                         }
                       }}
-                      sx={{ color: isInWishlist(stock.id) ? 'warning.main' : 'text.secondary' }}
+                      sx={{ color: isInWatchlist(stock.id) ? 'warning.main' : 'text.secondary' }}
                     >
-                      {isInWishlist(stock.id) ? <Star /> : <StarBorder />}
+                      {isInWatchlist(stock.id) ? <Star /> : <StarBorder />}
                     </IconButton>
                   </Box>
                 ))}
@@ -279,18 +280,18 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                         </Typography>
                         <IconButton
                           onClick={() => {
-                            if (isInWishlist(selectedStock.id)) {
-                              removeFromWishlist(selectedStock.id);
+                            if (isInWatchlist(selectedStock.id)) {
+                              removeFromWatchlist(selectedStock.id);
                             } else {
-                              addToWishlist(selectedStock);
+                              addToWatchlist(selectedStock);
                             }
                           }}
                           sx={{ 
-                            color: isInWishlist(selectedStock.id) ? 'warning.main' : 'text.secondary',
+                            color: isInWatchlist(selectedStock.id) ? 'warning.main' : 'text.secondary',
                             '&:hover': { color: 'warning.main' }
                           }}
                         >
-                          {isInWishlist(selectedStock.id) ? <Star /> : <StarBorder />}
+                          {isInWatchlist(selectedStock.id) ? <Star /> : <StarBorder />}
                         </IconButton>
                       </Box>
                       <Typography variant="body1" color="text.secondary">
@@ -433,19 +434,19 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
             </CardContent>
           </Card>
 
-          {/* Wishlist */}
+          {/* Watchlist */}
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                <Star sx={{ mr: 1, verticalAlign: 'bottom', color: 'warning.main' }} />
-                My Wishlist ({wishlist.length})
+                <Visibility sx={{ mr: 1, verticalAlign: 'bottom', color: 'primary.main' }} />
+                My Watchlist ({watchlist.length})
               </Typography>
-              {wishlist.length > 0 ? (
+              {watchlist.length > 0 ? (
                 <List dense>
-                  {wishlist.slice(0, 8).map((stock, index) => (
+                  {watchlist.slice(0, 8).map((stock, index) => (
                     <ListItem 
                       key={stock.id} 
-                      divider={index < Math.min(7, wishlist.length - 1)}
+                      divider={index < Math.min(7, watchlist.length - 1)}
                       sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                     >
                       <ListItemText
@@ -461,27 +462,30 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                       />
                       <IconButton
                         size="small"
-                        onClick={() => removeFromWishlist(stock.id)}
+                        onClick={() => removeFromWatchlist(stock.id)}
                         sx={{ color: 'error.main' }}
                       >
-                        <Favorite />
+                        <RemoveRedEye />
                       </IconButton>
                     </ListItem>
                   ))}
-                  {wishlist.length > 8 && (
+                  {watchlist.length > 8 && (
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', pt: 1 }}>
-                      +{wishlist.length - 8} more stocks
+                      +{watchlist.length - 8} more stocks
                     </Typography>
                   )}
                 </List>
               ) : (
                 <Box sx={{ textAlign: 'center', py: 2 }}>
                   <StarBorder sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">
-                    Add stocks to your wishlist
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Your watchlist is empty
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Use the star icon next to search results
+                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                    Search for stocks and click the ⭐ to watch them
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Try searching: WIPRO, TITAN, ICICIBANK
                   </Typography>
                 </Box>
               )}
