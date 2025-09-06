@@ -5,6 +5,8 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 const MainDashboard = React.lazy(() => import('../../pages/MainDashboard'));
 const BacktestingPage = React.lazy(() => import('../../pages/BacktestingPage'));
 const TradingPage = React.lazy(() => import('../../pages/TradingPage'));
+const AIMLAnalysisPage = React.lazy(() => import('../../pages/AIMLAnalysisPage'));
+const LLMAnalysisPage = React.lazy(() => import('../../pages/LLMAnalysisPage'));
 
 interface TabContainerProps {
   currentTab: number;
@@ -48,6 +50,18 @@ const TabContainer: React.FC<TabContainerProps> = ({ currentTab, mockDataMode })
         return (
           <Suspense fallback={<LoadingFallback message="Loading Trading..." />}>
             <TradingPage mockDataMode={mockDataMode} />
+          </Suspense>
+        );
+      case 3:
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading AI/ML Analysis..." />}>
+            <AIMLAnalysisPage mockDataMode={mockDataMode} />
+          </Suspense>
+        );
+      case 4:
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading LLM Analysis..." />}>
+            <LLMAnalysisPage mockDataMode={mockDataMode} />
           </Suspense>
         );
       default:

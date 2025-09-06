@@ -16,6 +16,8 @@ import {
   Analytics as AnalyticsIcon,
   TrendingUp as TradingIcon,
   Settings as SettingsIcon,
+  Psychology as AIIcon,
+  Chat as LLMIcon,
   WifiOff as MockDataIcon,
   Wifi as LiveDataIcon,
 } from '@mui/icons-material';
@@ -37,6 +39,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
     { label: 'Dashboard', icon: <DashboardIcon />, value: 0 },
     { label: 'Backtesting', icon: <AnalyticsIcon />, value: 1 },
     { label: 'Trading', icon: <TradingIcon />, value: 2 },
+    { label: 'AI/ML Analysis', icon: <AIIcon />, value: 3 },
+    { label: 'LLM Analysis', icon: <LLMIcon />, value: 4 },
   ];
 
   return (
