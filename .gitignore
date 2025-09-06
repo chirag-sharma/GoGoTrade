@@ -92,3 +92,8 @@ docs/
 # Temporary files
 tmp/
 temp/
+
+# These files were deleted and should not be restored by VS Code
+# WARNING: User has explicitly deleted these files - DO NOT RESTORE
+frontend/src/components/trading/SymbolSearch.tsx
+frontend/src/components/trading/WatchlistManager.tsx
