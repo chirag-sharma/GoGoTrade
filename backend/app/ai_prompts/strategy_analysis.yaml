@@ -1,0 +1,130 @@
+system_prompt: |
+  You are a sophisticated AI trading strategist for Indian markets. You excel at strategy development, 
+  backtesting analysis, and portfolio optimization. Your responses are data-driven and consider 
+  Indian market microstructure, regulatory environment, and retail investor behavior.
+
+prompts:
+  strategy_recommendation: |
+    Based on the following market conditions and user profile, recommend optimal trading strategies:
+    
+    Market Conditions:
+    - Market Trend: {market_trend}
+    - Volatility Index (VIX): {vix_level}
+    - Interest Rates: {interest_rates}%
+    - FII/DII Flow: {institutional_flow}
+    - Sector Rotation: {sector_rotation}
+    
+    User Profile:
+    - Risk Tolerance: {risk_tolerance}
+    - Investment Horizon: {investment_horizon}
+    - Capital Available: ₹{capital}
+    - Experience Level: {experience_level}
+    - Preferred Sectors: {preferred_sectors}
+    
+    Provide strategy recommendations including:
+    1. Primary strategy type (momentum/mean-reversion/breakout/etc.)
+    2. Asset allocation suggestions
+    3. Position sizing methodology
+    4. Entry/exit criteria
+    5. Risk management rules
+    6. Expected returns and drawdown
+    7. Strategy implementation steps
+    
+    Tailor recommendations for Indian market conditions and SEBI regulations.
+
+  backtest_analysis: |
+    Analyze the following backtesting results for strategy optimization:
+    
+    Strategy: {strategy_name}
+    Period: {backtest_period}
+    Initial Capital: ₹{initial_capital}
+    Final Capital: ₹{final_capital}
+    Total Return: {total_return}%
+    Annual Return: {annual_return}%
+    Sharpe Ratio: {sharpe_ratio}
+    Max Drawdown: {max_drawdown}%
+    Win Rate: {win_rate}%
+    Profit Factor: {profit_factor}
+    Number of Trades: {trade_count}
+    Average Trade: {avg_trade}%
+    
+    Performance Metrics:
+    - Best Month: {best_month}%
+    - Worst Month: {worst_month}%
+    - Volatility: {volatility}%
+    - Calmar Ratio: {calmar_ratio}
+    - Sortino Ratio: {sortino_ratio}
+    
+    Provide comprehensive analysis including:
+    1. Strategy performance assessment
+    2. Risk-adjusted return evaluation
+    3. Consistency analysis
+    4. Market regime performance
+    5. Optimization suggestions
+    6. Parameter tuning recommendations
+    7. Implementation feasibility
+    8. Comparison with benchmarks (NIFTY 50, SENSEX)
+
+  portfolio_optimization: |
+    Optimize portfolio allocation for the following assets and constraints:
+    
+    Available Assets: {asset_list}
+    Current Allocation: {current_allocation}
+    Target Return: {target_return}%
+    Risk Tolerance: {risk_tolerance}
+    Investment Horizon: {investment_horizon}
+    Correlation Matrix: {correlation_data}
+    Expected Returns: {expected_returns}
+    Volatilities: {asset_volatilities}
+    
+    Constraints:
+    - Maximum position size: {max_position}%
+    - Sector limits: {sector_limits}
+    - Minimum diversification: {min_diversification}
+    - Liquidity requirements: {liquidity_needs}
+    
+    Provide optimization recommendations:
+    1. Optimal asset weights
+    2. Expected portfolio metrics (return, volatility, Sharpe)
+    3. Risk contribution analysis
+    4. Diversification benefits
+    5. Rebalancing frequency
+    6. Tax-efficient implementation
+    7. Transaction cost considerations
+    8. Monitoring and adjustment triggers
+
+  risk_management: |
+    Develop comprehensive risk management framework for:
+    
+    Portfolio Details:
+    - Total Value: ₹{portfolio_value}
+    - Number of Positions: {position_count}
+    - Sector Exposure: {sector_exposure}
+    - Market Cap Distribution: {market_cap_dist}
+    - Beta: {portfolio_beta}
+    - VaR (95%): ₹{var_95}
+    
+    Risk Factors:
+    - Market Risk: {market_risk}
+    - Concentration Risk: {concentration_risk}
+    - Liquidity Risk: {liquidity_risk}
+    - Currency Risk: {currency_risk}
+    - Regulatory Risk: {regulatory_risk}
+    
+    Create risk management framework including:
+    1. Risk budgeting methodology
+    2. Position sizing rules
+    3. Stop-loss mechanisms
+    4. Correlation monitoring
+    5. Stress testing scenarios
+    6. Hedging strategies
+    7. Emergency procedures
+    8. Risk reporting framework
+    9. Compliance with SEBI norms
+
+metadata:
+  version: "1.0"
+  created: "2025-09-06"
+  description: "Strategic analysis and portfolio management prompts"
+  last_updated: "2025-09-06"
+  category: "strategy_development"

@@ -9,7 +9,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql+psycopg://gogotrade:gogotrade@timescaledb:5432/gogotrade
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-gogotrade}:${POSTGRES_PASSWORD:-changeme123}@timescaledb:5432/${POSTGRES_DB:-gogotrade}
       - REDIS_URL=redis://redis:6379
     depends_on:
       - timescaledb
@@ -21,9 +21,9 @@ services:
   timescaledb:
     image: timescale/timescaledb:latest-pg15
     environment:
-      POSTGRES_DB: gogotrade
-      POSTGRES_USER: gogotrade
-      POSTGRES_PASSWORD: gogotrade
+      POSTGRES_DB: ${POSTGRES_DB:-gogotrade}
+      POSTGRES_USER: ${POSTGRES_USER:-gogotrade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
     ports:
       - "5432:5432"
     volumes:
