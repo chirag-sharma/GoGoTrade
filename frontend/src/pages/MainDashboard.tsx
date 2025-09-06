@@ -30,11 +30,10 @@ import {
   ShowChart,
   AccountBalance,
   RemoveRedEye,
-  Star,
-  StarBorder,
   Visibility,
 } from '@mui/icons-material';
 import { NSESecuritiesService, NSEInstrument, MarketMoversResponse, SectorPerformance } from '../services/nseSecuritiesService';
+import WatchlistManager from '../components/trading/WatchlistManager';
 
 interface MainDashboardProps {
   mockDataMode: boolean;
@@ -252,9 +251,9 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                           addToWatchlist(stock);
                         }
                       }}
-                      sx={{ color: isInWatchlist(stock.id) ? 'warning.main' : 'text.secondary' }}
+                      sx={{ color: isInWatchlist(stock.id) ? 'primary.main' : 'text.secondary' }}
                     >
-                      {isInWatchlist(stock.id) ? <Star /> : <StarBorder />}
+                      {isInWatchlist(stock.id) ? <RemoveRedEye /> : <Visibility />}
                     </IconButton>
                   </Box>
                 ))}
@@ -287,11 +286,11 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                             }
                           }}
                           sx={{ 
-                            color: isInWatchlist(selectedStock.id) ? 'warning.main' : 'text.secondary',
-                            '&:hover': { color: 'warning.main' }
+                            color: isInWatchlist(selectedStock.id) ? 'primary.main' : 'text.secondary',
+                            '&:hover': { color: 'primary.main' }
                           }}
                         >
-                          {isInWatchlist(selectedStock.id) ? <Star /> : <StarBorder />}
+                          {isInWatchlist(selectedStock.id) ? <RemoveRedEye /> : <Visibility />}
                         </IconButton>
                       </Box>
                       <Typography variant="body1" color="text.secondary">
@@ -435,62 +434,13 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
           </Card>
 
           {/* Watchlist */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <Visibility sx={{ mr: 1, verticalAlign: 'bottom', color: 'primary.main' }} />
-                My Watchlist ({watchlist.length})
-              </Typography>
-              {watchlist.length > 0 ? (
-                <List dense>
-                  {watchlist.slice(0, 8).map((stock, index) => (
-                    <ListItem 
-                      key={stock.id} 
-                      divider={index < Math.min(7, watchlist.length - 1)}
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                    >
-                      <ListItemText
-                        primary={stock.symbol}
-                        secondary={stock.name}
-                        onClick={() => handleStockSelect(stock)}
-                        sx={{ cursor: 'pointer', flexGrow: 1, '&:hover': { color: 'primary.main' } }}
-                      />
-                      <Chip 
-                        label={stock.market_segment.replace('_', ' ')} 
-                        size="small" 
-                        variant="outlined" 
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => removeFromWatchlist(stock.id)}
-                        sx={{ color: 'error.main' }}
-                      >
-                        <RemoveRedEye />
-                      </IconButton>
-                    </ListItem>
-                  ))}
-                  {watchlist.length > 8 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', pt: 1 }}>
-                      +{watchlist.length - 8} more stocks
-                    </Typography>
-                  )}
-                </List>
-              ) : (
-                <Box sx={{ textAlign: 'center', py: 2 }}>
-                  <StarBorder sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Your watchlist is empty
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                    Search for stocks and click the ⭐ to watch them
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Try searching: WIPRO, TITAN, ICICIBANK
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          <WatchlistManager
+            watchlist={watchlist}
+            onStockSelect={handleStockSelect}
+            onRemoveFromWatchlist={removeFromWatchlist}
+            maxDisplay={8}
+            showHeader={true}
+          />
 
           {/* Market Movers */}
           {marketMovers && (
