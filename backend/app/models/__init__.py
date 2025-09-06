@@ -286,3 +286,25 @@ __all__ = [
     "TradingSignal", 
     "MarketSession"
 ]
+
+# Import market data models for NSE securities management
+from .market_data import (
+    InstrumentExtended,
+    Watchlist, 
+    WatchlistItem,
+    MarketStats,
+    SectorPerformance,
+    MarketSegment,
+    IndustryGroup
+)
+
+# Add to __all__ for public API
+__all__.extend([
+    "InstrumentExtended",
+    "Watchlist", 
+    "WatchlistItem", 
+    "MarketStats",
+    "SectorPerformance",
+    "MarketSegment",
+    "IndustryGroup"
+])

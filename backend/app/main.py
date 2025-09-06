@@ -9,10 +9,10 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import get_settings
 from app.api.v1 import router as v1_router
+from app.core.database import init_database, close_database, get_db_session
 
-# For now, let's simplify and avoid database dependencies
-# from app.core.database import db_manager
-# from app.services.real_time_data import start_real_time_data_service, stop_real_time_data_service
+# Import database for health check
+from sqlalchemy import text
 
 settings = get_settings()
 
@@ -21,16 +21,26 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
-    Simplified for quick startup.
+    Initialize database on startup.
     """
     # Startup
     print("🚀 Starting GoGoTrade application...")
-    print("✅ Basic services initialized")
+    try:
+        await init_database()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        raise
     
     yield
     
     # Shutdown
     print("🔄 Shutting down GoGoTrade application...")
+    try:
+        await close_database()
+        print("✅ Database connections closed")
+    except Exception as e:
+        print(f"⚠️  Database cleanup error: {e}")
     print("✅ Cleanup completed")
 
 
@@ -65,19 +75,38 @@ app.include_router(v1_router, prefix="/api")
 # Simple health check endpoint
 @app.get("/health/database")
 async def database_health_check():
-    """Check system health - simplified version."""
+    """Check database health with real connection test."""
     try:
-        return {
-            "status": "healthy",
-            "details": {
-                "api": "operational",
-                "timestamp": "2025-09-06T00:00:00Z"
+        async with get_db_session() as db:
+            # Test database connection
+            result = await db.execute(text("SELECT 1"))
+            db_status = result.scalar() == 1
+            
+            # Count instruments
+            result = await db.execute(text("SELECT COUNT(*) FROM instruments"))
+            instruments_count = result.scalar()
+            
+            # Count extended info
+            result = await db.execute(text("SELECT COUNT(*) FROM instruments_extended"))
+            extended_count = result.scalar()
+            
+            return {
+                "status": "healthy" if db_status else "unhealthy",
+                "details": {
+                    "database": "connected" if db_status else "disconnected",
+                    "instruments_loaded": instruments_count,
+                    "extended_info_loaded": extended_count,
+                    "timestamp": "2025-09-06T00:00:00Z"
+                }
             }
-        }
     except Exception as e:
         return {
             "status": "unhealthy",
-            "error": str(e)
+            "error": str(e),
+            "details": {
+                "database": "disconnected",
+                "timestamp": "2025-09-06T00:00:00Z"
+            }
         }
 
 

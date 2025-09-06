@@ -9,6 +9,7 @@ from .ai_enhanced import router as ai_enhanced_router
 from .trade_prediction import router as trade_prediction_router
 from .advanced_strategies import router as advanced_strategies_router
 from .real_time_data import router as real_time_data_router
+from .instruments_api import router as instruments_router
 
 # Create the main v1 router
 router = APIRouter(prefix="/v1")
@@ -27,6 +28,9 @@ router.include_router(advanced_strategies_router)
 
 # Include the real-time data router
 router.include_router(real_time_data_router)
+
+# Include the new instruments & securities management router
+router.include_router(instruments_router)
 
 # Health check endpoint for v1 API
 @router.get("/status")
@@ -66,6 +70,14 @@ async def api_status():
             "/v1/real-time/status",
             "/v1/real-time/ws",  # WebSocket endpoint
             "/v1/real-time/test/generate-sample-data",
+            
+            # Instruments & Securities Management endpoints
+            "/v1/instruments/search",
+            "/v1/instruments/filter", 
+            "/v1/instruments/market-movers",
+            "/v1/instruments/watchlists",
+            "/v1/instruments/watchlists/{watchlist_id}/items",
+            "/v1/instruments/sectors/analysis",
             "/v1/charts/indicators/{symbol}"
         ]
     }

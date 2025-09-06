@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSE Securities API Test - Phase 3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            color: #1976d2;
+            border-bottom: 2px solid #1976d2;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .api-test {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .test-section {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+        .loading {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #ef6c00;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-healthy {
+            background: #4caf50;
+            color: white;
+        }
+        .status-error {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">🚀 NSE Securities API Integration Test - Phase 3</h1>
+        <p>Testing backend API integration with NSE securities data on port 8001</p>
+    </div>
+
+    <div class="api-test">
+        <!-- Health Check -->
+        <div class="test-section">
+            <h3>🏥 Backend Health</h3>
+            <button onclick="testHealth()">Check Health</button>
+            <button onclick="clearResult('health')">Clear</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <!-- Search Test -->
+        <div class="test-section">
+            <h3>🔍 Securities Search</h3>
+            <button onclick="searchStock('RELIANCE')">Search RELIANCE</button>
+            <button onclick="searchStock('TCS')">Search TCS</button>
+            <button onclick="searchStock('INFY')">Search INFY</button>
+            <button onclick="clearResult('search')">Clear</button>
+            <div id="search-result" class="result"></div>
+        </div>
+
+        <!-- Instruments List -->
+        <div class="test-section">
+            <h3>📊 Sample Instruments</h3>
+            <button onclick="getInstruments()">Load Instruments</button>
+            <button onclick="getInstruments('LARGE_CAP')">Large Cap Only</button>
+            <button onclick="clearResult('instruments')">Clear</button>
+            <div id="instruments-result" class="result"></div>
+        </div>
+
+        <!-- Market Movers -->
+        <div class="test-section">
+            <h3>📈 Market Movers</h3>
+            <button onclick="getMarketMovers()">Load Market Movers</button>
+            <button onclick="clearResult('movers')">Clear</button>
+            <div id="movers-result" class="result"></div>
+        </div>
+
+        <!-- Sector Performance -->
+        <div class="test-section">
+            <h3>🏭 Sector Performance</h3>
+            <button onclick="getSectorPerformance()">Load Sectors</button>
+            <button onclick="clearResult('sectors')">Clear</button>
+            <div id="sectors-result" class="result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📝 Test Results Summary</h3>
+        <div id="summary">Click any test button to start testing the API integration...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let testResults = {};
+
+        async function makeRequest(url, testName) {
+            const resultDiv = document.getElementById(`${testName}-result`);
+            const button = event.target;
+            
+            try {
+                button.disabled = true;
+                resultDiv.className = 'result loading';
+                resultDiv.innerHTML = '⏳ Loading...';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ Success (${response.status})<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    testResults[testName] = { status: 'success', data };
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${data.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                testResults[testName] = { status: 'error', error: error.message };
+            } finally {
+                button.disabled = false;
+                updateSummary();
+            }
+        }
+
+        async function testHealth() {
+            await makeRequest(`${API_BASE}/health`, 'health');
+        }
+
+        async function searchStock(symbol) {
+            await makeRequest(`${API_BASE}/api/v1/search?q=${symbol}&limit=5`, 'search');
+        }
+
+        async function getInstruments(segment = '') {
+            const params = segment ? `?market_segment=${segment}&limit=10` : '?limit=10';
+            await makeRequest(`${API_BASE}/api/v1/instruments${params}`, 'instruments');
+        }
+
+        async function getMarketMovers() {
+            await makeRequest(`${API_BASE}/api/v1/market-movers`, 'movers');
+        }
+
+        async function getSectorPerformance() {
+            await makeRequest(`${API_BASE}/api/v1/sectors`, 'sectors');
+        }
+
+        function clearResult(testName) {
+            const resultDiv = document.getElementById(`${testName}-result`);
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '';
+            delete testResults[testName];
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            const tests = Object.keys(testResults);
+            
+            if (tests.length === 0) {
+                summary.innerHTML = 'Click any test button to start testing the API integration...';
+                return;
+            }
+
+            const successful = tests.filter(test => testResults[test].status === 'success').length;
+            const failed = tests.filter(test => testResults[test].status === 'error').length;
+            
+            let summaryHTML = `<strong>Tests Run:</strong> ${tests.length} | `;
+            summaryHTML += `<span style="color: #4caf50;">✅ Passed: ${successful}</span> | `;
+            summaryHTML += `<span style="color: #f44336;">❌ Failed: ${failed}</span><br><br>`;
+            
+            if (successful > 0) {
+                summaryHTML += '<strong>✅ Working Endpoints:</strong><br>';
+                tests.filter(test => testResults[test].status === 'success').forEach(test => {
+                    summaryHTML += `• ${test.charAt(0).toUpperCase() + test.slice(1)} API<br>`;
+                });
+            }
+            
+            if (failed > 0) {
+                summaryHTML += '<br><strong>❌ Failed Endpoints:</strong><br>';
+                tests.filter(test => testResults[test].status === 'error').forEach(test => {
+                    summaryHTML += `• ${test.charAt(0).toUpperCase() + test.slice(1)} API: ${testResults[test].error}<br>`;
+                });
+            }
+
+            // Add backend status if health check was successful
+            if (testResults.health && testResults.health.status === 'success') {
+                const healthData = testResults.health.data;
+                summaryHTML += `<br><strong>🏥 Backend Status:</strong><br>`;
+                summaryHTML += `• Database: <span class="status-badge status-healthy">${healthData.database}</span><br>`;
+                summaryHTML += `• Total Instruments: <strong>${healthData.instruments}</strong><br>`;
+                summaryHTML += `• Server: <span class="status-badge status-healthy">${healthData.status}</span><br>`;
+            }
+            
+            summary.innerHTML = summaryHTML;
+        }
+
+        // Auto-run health check on page load
+        window.addEventListener('load', () => {
+            setTimeout(testHealth, 1000);
+        });
+    </script>
+</body>
+</html>

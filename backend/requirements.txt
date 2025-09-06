@@ -25,6 +25,10 @@ aiohttp==3.9.1
 yfinance==0.2.18
 kiteconnect==5.0.1
 
+# Additional dependencies for NSE data management
+beautifulsoup4==4.12.2  # For web scraping if needed
+lxml==4.9.3  # XML/HTML parsing
+
 # Technical Analysis - Modern alternatives (No C dependencies!)
 pandas-ta==0.3.14b0
 
