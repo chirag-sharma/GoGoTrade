@@ -29,6 +29,9 @@ import {
   Refresh,
   ShowChart,
   AccountBalance,
+  Favorite,
+  Star,
+  StarBorder,
 } from '@mui/icons-material';
 import { NSESecuritiesService, NSEInstrument, MarketMoversResponse, SectorPerformance } from '../services/nseSecuritiesService';
 
@@ -66,12 +69,28 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
   const [marketMovers, setMarketMovers] = useState<MarketMoversResponse | null>(null);
   const [sectorPerformance, setSectorPerformance] = useState<SectorPerformance[]>([]);
   const [recentInstruments, setRecentInstruments] = useState<NSEInstrument[]>([]);
+  const [wishlist, setWishlist] = useState<NSEInstrument[]>([]);
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState<string | null>(null);
 
   // Helper functions
   const setLoadingState = (key: string, isLoading: boolean) => {
     setLoading(prev => ({ ...prev, [key]: isLoading }));
+  };
+
+  // Wishlist functions
+  const addToWishlist = (stock: NSEInstrument) => {
+    if (!wishlist.find(item => item.id === stock.id)) {
+      setWishlist(prev => [...prev, stock]);
+    }
+  };
+
+  const removeFromWishlist = (stockId: number) => {
+    setWishlist(prev => prev.filter(item => item.id !== stockId));
+  };
+
+  const isInWishlist = (stockId: number) => {
+    return wishlist.some(item => item.id === stockId);
   };
 
   // Load initial data
@@ -98,7 +117,21 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
 
   useEffect(() => {
     loadInitialData();
-  }, [loadInitialData]);  // Search functionality
+    // Load wishlist from localStorage
+    const savedWishlist = localStorage.getItem('gogoTrade_wishlist');
+    if (savedWishlist) {
+      try {
+        setWishlist(JSON.parse(savedWishlist));
+      } catch (err) {
+        console.error('Failed to load wishlist from localStorage:', err);
+      }
+    }
+  }, [loadInitialData]);
+
+  // Save wishlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('gogoTrade_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);  // Search functionality
   const handleSearch = async () => {
     if (!searchQuery.trim() || searchQuery.length < 2) return;
     
@@ -200,14 +233,29 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {searchResults.map((stock) => (
-                  <Chip
-                    key={stock.id}
-                    label={`${stock.symbol} - ${stock.name}`}
-                    clickable
-                    onClick={() => handleStockSelect(stock)}
-                    variant={selectedStock?.id === stock.id ? 'filled' : 'outlined'}
-                    color={selectedStock?.id === stock.id ? 'primary' : 'default'}
-                  />
+                  <Box key={stock.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Chip
+                      label={`${stock.symbol} - ${stock.name}`}
+                      clickable
+                      onClick={() => handleStockSelect(stock)}
+                      variant={selectedStock?.id === stock.id ? 'filled' : 'outlined'}
+                      color={selectedStock?.id === stock.id ? 'primary' : 'default'}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isInWishlist(stock.id)) {
+                          removeFromWishlist(stock.id);
+                        } else {
+                          addToWishlist(stock);
+                        }
+                      }}
+                      sx={{ color: isInWishlist(stock.id) ? 'warning.main' : 'text.secondary' }}
+                    >
+                      {isInWishlist(stock.id) ? <Star /> : <StarBorder />}
+                    </IconButton>
+                  </Box>
                 ))}
               </Box>
             </Box>
@@ -225,9 +273,26 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Box>
-                      <Typography variant="h5" gutterBottom>
-                        {selectedStock.symbol}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h5" gutterBottom>
+                          {selectedStock.symbol}
+                        </Typography>
+                        <IconButton
+                          onClick={() => {
+                            if (isInWishlist(selectedStock.id)) {
+                              removeFromWishlist(selectedStock.id);
+                            } else {
+                              addToWishlist(selectedStock);
+                            }
+                          }}
+                          sx={{ 
+                            color: isInWishlist(selectedStock.id) ? 'warning.main' : 'text.secondary',
+                            '&:hover': { color: 'warning.main' }
+                          }}
+                        >
+                          {isInWishlist(selectedStock.id) ? <Star /> : <StarBorder />}
+                        </IconButton>
+                      </Box>
                       <Typography variant="body1" color="text.secondary">
                         {selectedStock.name}
                       </Typography>
@@ -365,6 +430,61 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ mockDataMode }) => {
                   </ListItem>
                 ))}
               </List>
+            </CardContent>
+          </Card>
+
+          {/* Wishlist */}
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <Star sx={{ mr: 1, verticalAlign: 'bottom', color: 'warning.main' }} />
+                My Wishlist ({wishlist.length})
+              </Typography>
+              {wishlist.length > 0 ? (
+                <List dense>
+                  {wishlist.slice(0, 8).map((stock, index) => (
+                    <ListItem 
+                      key={stock.id} 
+                      divider={index < Math.min(7, wishlist.length - 1)}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
+                      <ListItemText
+                        primary={stock.symbol}
+                        secondary={stock.name}
+                        onClick={() => handleStockSelect(stock)}
+                        sx={{ cursor: 'pointer', flexGrow: 1, '&:hover': { color: 'primary.main' } }}
+                      />
+                      <Chip 
+                        label={stock.market_segment.replace('_', ' ')} 
+                        size="small" 
+                        variant="outlined" 
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => removeFromWishlist(stock.id)}
+                        sx={{ color: 'error.main' }}
+                      >
+                        <Favorite />
+                      </IconButton>
+                    </ListItem>
+                  ))}
+                  {wishlist.length > 8 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', pt: 1 }}>
+                      +{wishlist.length - 8} more stocks
+                    </Typography>
+                  )}
+                </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <StarBorder sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Add stocks to your wishlist
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Use the star icon next to search results
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
 
