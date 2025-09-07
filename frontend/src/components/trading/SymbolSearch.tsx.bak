@@ -1,0 +1,274 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Autocomplete,
+  TextField,
+  Box,
+  Typography,
+  Chip,
+  Avatar,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  InputAdornment,
+  CircularProgress,
+} from '@mui/material';
+import {
+  Search,
+  TrendingUp,
+  TrendingDown,
+  ShowChart,
+} from '@mui/icons-material';
+import { NSESecuritiesService, NSEInstrument } from '../../services/nseSecuritiesService';
+
+// Simple debounce function
+function debounce<T extends (...args: any[]) => any>(func: T, delay: number): T {
+  let timeoutId: NodeJS.Timeout;
+  return ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  }) as T;
+}
+
+interface SymbolSearchProps {
+  onInstrumentSelect: (instrument: NSEInstrument) => void;
+  selectedInstrument?: NSEInstrument | null;
+  placeholder?: string;
+  autoFocus?: boolean;
+  fullWidth?: boolean;
+  size?: 'small' | 'medium';
+  showDetails?: boolean;
+}
+
+const SymbolSearch: React.FC<SymbolSearchProps> = ({
+  onInstrumentSelect,
+  selectedInstrument,
+  placeholder = "Search stocks, indices, futures...",
+  autoFocus = false,
+  fullWidth = true,
+  size = 'medium',
+  showDetails = true,
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NSEInstrument[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/v1/instruments/search?query=${encodeURIComponent(query)}&limit=20`
+        );
+        
+        if (response.ok) {
+          const instruments = await response.json();
+          setSearchResults(instruments);
+        } else {
+          console.error('Search failed:', response.statusText);
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300),
+    []
+  );
+
+  // Handle input change
+  const handleInputChange = (event: React.SyntheticEvent, value: string) => {
+    setSearchQuery(value);
+    debouncedSearch(value);
+  };
+
+  // Handle instrument selection
+  const handleInstrumentChange = (event: React.SyntheticEvent, value: NSEInstrument | null) => {
+    if (value) {
+      onInstrumentSelect(value);
+      setOpen(false);
+    }
+  };
+
+  // Format market cap
+  const formatMarketCap = (marketCap?: number) => {
+    if (!marketCap) return '';
+    
+    if (marketCap >= 1000000000000) {
+      return `₹${(marketCap / 1000000000000).toFixed(1)}T`;
+    } else if (marketCap >= 10000000000) {
+      return `₹${(marketCap / 10000000000).toFixed(1)}K Cr`;
+    } else if (marketCap >= 10000000) {
+      return `₹${(marketCap / 10000000).toFixed(0)} Cr`;
+    }
+    return `₹${marketCap.toLocaleString()}`;
+  };
+
+  // Get trend icon
+  const getTrendIcon = (changePercent?: number) => {
+    if (!changePercent) return <ShowChart color="disabled" />;
+    
+    if (changePercent > 0) {
+      return <TrendingUp color="success" />;
+    } else if (changePercent < 0) {
+      return <TrendingDown color="error" />;
+    }
+    return <ShowChart color="warning" />;
+  };
+
+  // Get industry color
+  const getIndustryColor = (industry?: string) => {
+    const colors: Record<string, string> = {
+      'IT': '#2196F3',
+      'BANKING': '#4CAF50',
+      'PHARMA': '#FF9800',
+      'FMCG': '#9C27B0',
+      'AUTO': '#F44336',
+      'METALS': '#795548',
+      'ENERGY': '#FF5722',
+      'TELECOM': '#607D8B',
+    };
+    
+    return colors[industry || ''] || '#757575';
+  };
+
+  return (
+    <Autocomplete
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      value={selectedInstrument}
+      inputValue={searchQuery}
+      onInputChange={handleInputChange}
+      onChange={handleInstrumentChange}
+      options={searchResults}
+      loading={loading}
+      getOptionLabel={(option) => option.symbol}
+      filterOptions={(x) => x} // Disable built-in filtering
+      isOptionEqualToValue={(option, value) => option.id === value.id}
+      fullWidth={fullWidth}
+      size={size}
+      autoHighlight
+      clearOnBlur={false}
+      selectOnFocus
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          InputProps={{
+            ...params.InputProps,
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <>
+                {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                {params.InputProps.endAdornment}
+              </>
+            ),
+          }}
+        />
+      )}
+      renderOption={(props, option) => (
+        <ListItem {...props} key={option.id}>
+          <ListItemAvatar>
+            <Avatar
+              sx={{
+                bgcolor: getIndustryColor(option.industry_group),
+                width: 40,
+                height: 40,
+                fontSize: '0.875rem',
+              }}
+            >
+              {option.tradingsymbol.slice(0, 2)}
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText
+            primary={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="subtitle2" component="span">
+                  {option.tradingsymbol}
+                </Typography>
+                {option.is_f_and_o && (
+                  <Chip label="F&O" size="small" color="primary" variant="outlined" />
+                )}
+                {getTrendIcon(option.price_change_percent)}
+              </Box>
+            }
+            secondary={
+              <Box>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {option.name}
+                </Typography>
+                {showDetails && (
+                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                    {option.exchange && (
+                      <Chip
+                        label={option.exchange}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {option.industry_group && (
+                      <Chip
+                        label={option.industry_group}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {option.market_segment && (
+                      <Chip
+                        label={option.market_segment.replace('_', ' ')}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                  </Box>
+                )}
+              </Box>
+            }
+          />
+          <Box sx={{ textAlign: 'right', minWidth: 80 }}>
+            {option.last_price && (
+              <Typography variant="subtitle2">
+                ₹{option.last_price.toLocaleString()}
+              </Typography>
+            )}
+            {option.market_cap && (
+              <Typography variant="caption" color="text.secondary">
+                {formatMarketCap(option.market_cap)}
+              </Typography>
+            )}
+          </Box>
+        </ListItem>
+      )}
+      noOptionsText={
+        searchQuery.length < 2 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+            Type at least 2 characters to search
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+            No instruments found for "{searchQuery}"
+          </Typography>
+        )
+      }
+    />
+  );
+};
+
+export default SymbolSearch;

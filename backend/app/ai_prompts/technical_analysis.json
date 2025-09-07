@@ -1,0 +1,22 @@
+{
+  "system_prompt": "You are an expert Indian stock market analyst specializing in technical analysis. You provide clear, actionable insights based on candlestick patterns, technical indicators, and market data. Always consider SEBI regulations and Indian market conditions in your analysis.",
+  
+  "prompts": {
+    "pattern_recognition": "Analyze the following candlestick pattern data for {symbol}:\n\nTimeframe: {timeframe}\nOHLC Data: {ohlc_data}\nVolume: {volume}\nCurrent Price: ₹{current_price}\n\nIdentify any significant candlestick patterns (doji, hammer, engulfing, etc.) and provide:\n1. Pattern name and description\n2. Bullish/Bearish signal strength (1-10)\n3. Entry/exit recommendations\n4. Risk management suggestions\n5. Target price levels\n\nConsider Indian market context and respond in a clear, actionable format.",
+    
+    "trend_analysis": "Perform trend analysis for {symbol} using the following data:\n\nCurrent Price: ₹{current_price}\nSMA 20: ₹{sma_20}\nSMA 50: ₹{sma_50}\nSMA 200: ₹{sma_200}\nRSI: {rsi}\nMACD Signal: {macd_signal}\nVolume Trend: {volume_trend}\n\nProvide comprehensive trend analysis including:\n1. Primary trend direction (bullish/bearish/sideways)\n2. Trend strength (1-10)\n3. Support and resistance levels\n4. Key moving average analysis\n5. Momentum indicators interpretation\n6. Recommended trading strategy\n\nFormat response for Indian retail traders.",
+    
+    "risk_assessment": "Assess trading risk for {symbol} with the following parameters:\n\nEntry Price: ₹{entry_price}\nCurrent Price: ₹{current_price}\nPosition Size: {position_size}%\nMarket Cap: ₹{market_cap} Cr\nDaily Volume: {avg_volume}\nVolatility (30D): {volatility_30d}%\nBeta: {beta}\nSector: {sector}\n\nProvide risk assessment including:\n1. Risk level (Low/Medium/High)\n2. Position sizing recommendation\n3. Stop-loss levels\n4. Risk-reward ratio\n5. Sector-specific risks\n6. Market correlation factors\n\nConsider SEBI guidelines and Indian market regulations.",
+    
+    "market_sentiment": "Analyze market sentiment for {symbol} based on:\n\nPrice Action: {price_action}\nVolume Analysis: {volume_analysis}\nNews Sentiment: {news_sentiment}\nSocial Media Buzz: {social_sentiment}\nInstitutional Activity: {institutional_flow}\nFII/DII Data: {fii_dii_data}\nSector Performance: {sector_performance}\n\nProvide sentiment analysis including:\n1. Overall sentiment score (1-10, bearish to bullish)\n2. Key sentiment drivers\n3. Institutional vs retail sentiment\n4. Short-term vs long-term outlook\n5. Sentiment-based trading recommendations\n6. Risk factors to monitor\n\nTailor analysis for Indian market dynamics.",
+    
+    "earnings_analysis": "Analyze earnings impact for {symbol}:\n\nUpcoming Earnings: {earnings_date}\nEstimated EPS: ₹{estimated_eps}\nPrevious EPS: ₹{previous_eps}\nEarnings Growth: {earnings_growth}%\nRevenue Growth: {revenue_growth}%\nPE Ratio: {pe_ratio}\nIndustry PE: {industry_pe}\nEarnings Surprise History: {surprise_history}\n\nProvide earnings analysis including:\n1. Earnings expectation assessment\n2. Price target adjustment\n3. Pre/post earnings strategy\n4. Volatility expectations\n5. Sector comparison\n6. Key metrics to watch\n\nFocus on Indian accounting standards and market expectations."
+  },
+  
+  "metadata": {
+    "version": "1.0",
+    "created": "2025-09-06",
+    "description": "Technical analysis prompts for Indian stock markets",
+    "last_updated": "2025-09-06"
+  }
+}

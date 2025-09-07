@@ -5,34 +5,50 @@ python-multipart==0.0.6
 
 # Configuration management
 pydantic[email]==2.5.0
+pydantic-settings==2.1.0
 python-decouple==3.8
+PyYAML==6.0.1
 
 # Database and caching
-asyncpg==0.29.0
-sqlalchemy==2.0.23
+psycopg[binary]==3.2.9
+sqlalchemy[asyncio]==2.0.23
 alembic==1.13.0
-redis==5.0.1
+redis[hiredis]==5.0.1
 
 # Time series database (TimescaleDB is PostgreSQL extension)
-psycopg2-binary==2.9.9
+# psycopg2-binary==2.9.9 # Replaced with psycopg
 
 # Trading and financial data
-kiteconnect==4.3.0
+numpy==1.23.5
 pandas==2.1.4
-numpy==1.26.2
-ta-lib==0.4.28
+aiohttp==3.9.1
+yfinance==0.2.18
+kiteconnect==5.0.1
 
-# Backtesting and analysis
-vectorbt==0.25.2
+# Additional dependencies for NSE data management
+beautifulsoup4==4.12.2  # For web scraping if needed
+lxml==4.9.3  # XML/HTML parsing
+
+# Technical Analysis - Modern alternatives (No C dependencies!)
+pandas-ta==0.3.14b0
+
+# Advanced analytics and backtesting
+vectorbt==0.28.1
 backtrader==1.9.78.123
 
 # WebSocket support
 websockets==12.0
 python-socketio==5.10.0
 
+# Real-time data processing
+pandas==2.1.4
+numpy==1.23.5
+scipy==1.11.4
+
 # HTTP clients
 httpx==0.25.2
 requests==2.31.0
+aiohttp==3.9.1
 
 # Async support
 asyncio==3.4.3
