@@ -131,8 +131,8 @@ export class NSESecuritiesService {
    */
   static async searchSecurities(query: string, limit: number = 10): Promise<NSEInstrument[]> {
     try {
-      const response = await apiClient.get('/api/v1/search', {
-        params: { q: query, limit }
+      const response = await apiClient.get('/api/v1/instruments/search', {
+        params: { query, limit }
       });
       return response.data;
     } catch (error) {

@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 import asyncio
 
+# Initialize logger
+logger = logging.getLogger(__name__)
+
 # Note: In production, these would be actual ML libraries
 # For now, we'll simulate advanced AI capabilities
 try:
@@ -21,7 +24,6 @@ try:
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
-    logger = logging.getLogger(__name__)
     logger.warning("ML libraries not available, using simulated AI models")
 
 from .market_data import MarketData, OHLCData, market_service

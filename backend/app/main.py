@@ -46,10 +46,10 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.appName,
-    version=settings.appVersion,
+    title=settings.app_name,
+    version=settings.app_version,
     description="AI-Powered Indian Stock Trading Platform",
-    openapi_url=f"{settings.apiV1Prefix}/openapi.json",
+    openapi_url=f"{settings.api_v1_prefix}/openapi.json",
     lifespan=lifespan
 )
 
@@ -65,7 +65,7 @@ app.add_middleware(
 # Add trusted host middleware
 app.add_middleware(
     TrustedHostMiddleware, 
-    allowed_hosts=settings.allowedHosts
+    allowed_hosts=settings.allowed_hosts
 )
 
 # Include API routers

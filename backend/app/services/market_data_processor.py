@@ -16,7 +16,7 @@ from sqlalchemy import select, desc
 
 from app.core.database import get_db_session
 from app.models import Instrument, OHLCVData, TradingSignal
-from app.services.advanced_ai import AdvancedAIService
+from app.services.advanced_ai import AdvancedAITradingEngine
 
 
 logger = logging.getLogger(__name__)
@@ -28,14 +28,15 @@ class MarketDataProcessor:
     """
     
     def __init__(self):
-        self.ai_service = AdvancedAIService()
+        self.ai_service = AdvancedAITradingEngine()
         self.price_history: Dict[str, List] = {}
         self.indicators_cache: Dict[str, Dict] = {}
         
     async def initialize(self):
         """Initialize the market data processor."""
         logger.info("Initializing market data processor...")
-        await self.ai_service.initialize()
+        # AI service is already initialized in constructor
+        logger.info("Market data processor initialized successfully")
     
     async def generate_signal(self, symbol: str, price_data: Dict) -> Optional[Dict]:
         """

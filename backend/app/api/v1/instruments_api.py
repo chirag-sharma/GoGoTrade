@@ -129,12 +129,8 @@ async def search_instruments(
     """
     async with get_db_session() as db:
         try:
-            # Build base query with joins
-            query_stmt = (
-                select(Instrument, InstrumentExtended)
-                .outerjoin(InstrumentExtended, Instrument.id == InstrumentExtended.instrument_id)
-                .where(InstrumentExtended.is_active == True)
-            )
+            # Build query
+            query_stmt = select(Instrument)
             
             # Add search conditions (case-insensitive, partial match)
             search_conditions = or_(
@@ -153,10 +149,10 @@ async def search_instruments(
             if industry_group:
                 query_stmt = query_stmt.where(InstrumentExtended.industry_group == industry_group.upper())
             
-            # Order by relevance (exact symbol match first, then by market cap)
+            # Order by relevance (exact symbol match first, then by name)
             query_stmt = query_stmt.order_by(
                 Instrument.tradingsymbol.ilike(f"{query}%").desc(),
-                InstrumentExtended.market_cap.desc().nullslast()
+                Instrument.name
             ).limit(limit)
             
             result = await db.execute(query_stmt)
@@ -164,23 +160,24 @@ async def search_instruments(
             
             # Format response
             instruments = []
-            for instrument, extended in instruments_data:
+            for row in instruments_data:
+                # row is a tuple, access by index
                 instruments.append(InstrumentResponse(
-                    id=str(instrument.id),
-                    instrument_token=instrument.instrument_token,
-                    tradingsymbol=instrument.tradingsymbol,
-                    name=instrument.name,
-                    last_price=float(instrument.last_price) if instrument.last_price else None,
-                    exchange=instrument.exchange,
-                    instrument_type=instrument.instrument_type.value,
-                    industry_group=extended.industry_group.value if extended and extended.industry_group else None,
-                    sector=extended.sector if extended else None,
-                    market_segment=extended.market_segment.value if extended and extended.market_segment else None,
-                    market_cap=extended.market_cap if extended else None,
-                    pe_ratio=float(extended.pe_ratio) if extended and extended.pe_ratio else None,
-                    pb_ratio=float(extended.pb_ratio) if extended and extended.pb_ratio else None,
-                    is_f_and_o=extended.is_f_and_o if extended else False,
-                    nifty_indices=extended.nifty_indices if extended else None
+                    id=str(row[0]),  # instrument.id
+                    instrument_token=row[1],  # instrument.instrument_token
+                    tradingsymbol=row[2],  # instrument.tradingsymbol
+                    name=row[3],  # instrument.name
+                    last_price=float(row[4]) if row[4] else 0.0,  # instrument.last_price
+                    exchange=row[5],  # instrument.exchange
+                    instrument_type=row[6].value if hasattr(row[6], 'value') else str(row[6]),  # instrument.instrument_type
+                    industry_group=None,  # No extended data
+                    sector=None,  # No extended data
+                    market_segment=None,  # No extended data
+                    market_cap=None,  # No extended data
+                    pe_ratio=None,  # No extended data
+                    pb_ratio=None,  # No extended data
+                    is_f_and_o=False,  # No extended data
+                    nifty_indices=None  # No extended data
                 ))
             
             return instruments
